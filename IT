@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Employee Tax Calculator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 500px;
+      background-attachment: fixed;
+      background-color: #f0f8ff;
+      padding: 50px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      box-shadow: 0 0 15px #555;
+    }
+
+    h2 {
+      text-align: center;
+      color: #0f5f5c;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #aaa;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      background: linear-gradient(45deg, #ff6a00, #ffc107);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: linear-gradient(45deg, #ffc107, #ff6a00);
+    }
+
+    .result {
+      margin-top: 30px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #e60000;
+      text-align: center;
+      animation: blink 1s step-start 0s infinite;
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+<img src="https://incometaxindia.gov.in/Lists/Useful%20Links/Attachments/32/IncomeTax_Logo.png"
+     alt="Income Tax Dept Logo"
+     style="position: absolute; top: 20px; right: 30px; width: 120px;">
+
+  <div class="container">
+    <h2>Employee Tax Calculator</h2>
+
+    <label for="name">Employee Name:</label>
+    <input type="text" id="name" placeholder="Enter full name">
+
+    <label for="dob">Date of Birth:</label>
+    <input type="date" id="dob">
+
+    <label for="gender">Gender:</label>
+    <select id="gender">
+      <option value="">--Select Gender--</option>
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select>
+
+    <label for="salary">Annual Salary (₹):</label>
+    <input type="number" id="salary" placeholder="Enter annual salary">
+
+    <button onclick="calculateTax()">Calculate Tax</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    function calculateTax() {
+      const name = document.getElementById("name").value.trim();
+      const dob = document.getElementById("dob").value;
+      const gender = document.getElementById("gender").value;
+      const salary = parseFloat(document.getElementById("salary").value);
+      const resultDiv = document.getElementById("result");
+
+      if (!name || !dob || !gender || isNaN(salary)) {
+        resultDiv.style.color = "red";
+        resultDiv.textContent = "⚠️ Please fill all fields correctly!";
+        return;
+      }
+
+      let tax = 0;
+
+      if (salary < 700000) {
+        tax = 0;
+      } else if (salary < 1000000) {
+        tax = gender === "male" ? salary * 0.10 : salary * 0.05;
+      } else if (salary < 2000000) {
+        tax = gender === "male" ? salary * 0.20 : salary * 0.10;
+      } else {
+        if (gender === "male") {
+          tax = salary * 0.30;
+        } else {
+          tax = salary <= 3000000 ? salary * 0.20 : salary * 0.30;
+        }
+      }
+
+      const taxFormatted = tax.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+
+      resultDiv.innerHTML = `Dear ${name},<br>Your calculated tax is <span style="color:#007bff">${taxFormatted}</span>`;
+      resultDiv.style.color = "#e60000";
+    }
+  </script>
+</body>
+</html>
