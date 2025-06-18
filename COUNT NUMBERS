@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Average Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 50px;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: auto;
+      padding: 20px;
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-right: 10px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .message {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Average Calculator</h2>
+
+    <input type="text" id="numberInput" placeholder="Enter a number">
+    <button onclick="saveNumber()">Save</button>
+    <button onclick="calculateAverage()">Calculate Average</button>
+
+    <input type="text" id="resultBox" placeholder="Average will be shown here" readonly>
+
+    <div class="message" id="messageBox"></div>
+  </div>
+
+  <script>
+    let numbers = [];
+  
+    function saveNumber() {
+      const input = document.getElementById("numberInput").value.trim();
+      const messageBox = document.getElementById("messageBox");
+  
+      if (input === '' || isNaN(input)) {
+        messageBox.textContent = "Please enter a valid number.";
+        return;
+      }
+  
+      numbers.push(parseFloat(input));
+      document.getElementById("numberInput").value = "";
+  
+      // Use backticks for string interpolation
+      messageBox.textContent = `Number ${input} saved. Total numbers: ${numbers.length}`;
+    }
+  
+    function calculateAverage() {
+      const resultBox = document.getElementById("resultBox");
+  
+      if (numbers.length === 0) {
+        resultBox.value = "No numbers saved.";
+        return;
+      }
+  
+      const sum = numbers.reduce((a, b) => a + b, 0);
+      const avg = sum / numbers.length;
+      resultBox.value = avg.toFixed(2);
+    }
+  </script>
+  
+</body>
+</html>
