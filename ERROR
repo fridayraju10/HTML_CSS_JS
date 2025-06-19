@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cricket Score Tracker</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom right, #d1e0e0, #b3d9ff);
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-image: url('https://www.transparenttextures.com/patterns/brushed-alum.png');
+    }
+
+    h1 {
+      color: #003366;
+    }
+
+    label {
+      font-weight: bold;
+      color: #004d4d;
+      display: inline-block;
+      margin: 10px 5px;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      border: 1px solid #888;
+      font-size: 1em;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #0099cc;
+      color: white;
+      cursor: pointer;
+    }
+
+    .player-info {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #003366;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #ffffffcc;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+
+    .corner-img {
+      width: 100px;
+      position: absolute;
+    }
+    .top-left { top: 10px; left: 10px; }
+    .top-right { top: 10px; right: 10px; }
+  </style>
+</head>
+<body>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Virat_Kohli_2018.jpg/220px-Virat_Kohli_2018.jpg" class="corner-img top-left">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/MS_Dhoni_in_the_Indian_Army_uniform.jpg/220px-MS_Dhoni_in_the_Indian_Army_uniform.jpg" class="corner-img top-right">
+  <div class="container">
+    <h1>Cricket Score Tracker</h1>
+
+    <div>
+      <label for="playerSelect">Select Player:</label>
+      <select id="playerSelect"></select>
+      <button onclick="loadPlayer()">Load</button>
+    </div>
+
+    <div>
+      <label>Match Number:</label>
+      <input type="text" id="matchNumber" disabled>
+      <label>Runs:</label>
+      <input type="number" id="matchScore">
+      <button onclick="addScore()">Submit Score</button>
+    </div>
+
+    <div>
+      <label>Add New Player:</label>
+      <input type="text" id="newPlayer">
+      <button onclick="addPlayer()">Add</button>
+    </div>
+
+    <div>
+      <button onclick="showRanks()">View Rank</button>
+      <button onclick="showDetails()">View Player Details</button>
+    </div>
+
+    <div class="player-info" id="output"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjjQM4knbyL8w8VrfPvt-Xj6dkI74Gv8U",
+      authDomain: "cricket-88ad2.firebaseapp.com",
+      projectId: "cricket-88ad2",
+      storageBucket: "cricket-88ad2.appspot.com",
+      messagingSenderId: "215180591938",
+      appId: "1:215180591938:web:f0446b2370e1bf80537edb"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function updatePlayerList() {
+      const sel = document.getElementById('playerSelect');
+      sel.innerHTML = '';
+      const snapshot = await db.collection('players').get();
+      snapshot.forEach(doc => {
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.textContent = doc.id;
+        sel.appendChild(opt);
+      });
+    }
+
+    async function addPlayer() {
+      const name = document.getElementById('newPlayer').value.trim();
+      if (name) {
+        await db.collection('players').doc(name).set({ scores: [] });
+        updatePlayerList();
+        document.getElementById('newPlayer').value = '';
+      }
+    }
+
+    async function loadPlayer() {
+      const name = document.getElementById('playerSelect').value;
+      const doc = await db.collection('players').doc(name).get();
+      if (doc.exists) {
+        const scores = doc.data().scores || [];
+        document.getElementById('matchNumber').value = scores.length + 1;
+      }
+    }
+
+    async function addScore() {
+      const name = document.getElementById('playerSelect').value;
+      const score = parseInt(document.getElementById('matchScore').value);
+      if (!isNaN(score)) {
+        const ref = db.collection('players').doc(name);
+        const doc = await ref.get();
+        let scores = doc.exists ? doc.data().scores : [];
+        scores.push(score);
+        await ref.set({ scores });
+        document.getElementById('matchScore').value = '';
+        loadPlayer();
+      }
+    }
+
+    async function showRanks() {
+      const snapshot = await db.collection('players').get();
+      let ranking = [];
+      snapshot.forEach(doc => {
+        const scores = doc.data().scores || [];
+        const total = scores.reduce((a, b) => a + b, 0);
+        ranking.push({ name: doc.id, total });
+      });
+      ranking.sort((a, b) => b.total - a.total);
+      let html = '<h3>Player Rankings</h3>';
+      ranking.forEach((p, i) => {
+        html += `${i + 1}. ${p.name} - ${p.total} runs<br>`;
+      });
+      document.getElementById('output').innerHTML = html;
+    }
+
+    async function showDetails() {
+      const name = document.getElementById('playerSelect').value;
+      const doc = await db.collection('players').doc(name).get();
+      if (doc.exists) {
+        const scores = doc.data().scores || [];
+        const total = scores.reduce((a, b) => a + b, 0);
+        const avg = (total / scores.length).toFixed(2);
+        let html = `<h3>${name}</h3>Total Runs: ${total}<br>Matches: ${scores.length}<br>Average: ${avg}`;
+        document.getElementById('output').innerHTML = html;
+      }
+    }
+
+    updatePlayerList();
+  </script>
+</body>
+</html>
