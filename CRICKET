@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cricket Score Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <header>
+    <img src="cricket1.png" class="corner left" alt="Cricketer">
+    <img src="cricket2.png" class="corner right" alt="Cricketer">
+    <h1>🏏 Cricket Score Tracker</h1>
+  </header>
+
+  <main>
+    <!-- ADD PLAYER SECTION -->
+    <section class="add-player">
+      <label for="newPlayerName">Add New Player:</label>
+      <input type="text" id="newPlayerName" placeholder="Enter player name" />
+      <button id="addPlayerBtn">Add Player</button>
+    </section>
+
+    <!-- SELECT PLAYER + SCORE ENTRY -->
+    <section class="controls">
+      <label for="playerSelect">Select Player:</label>
+      <select id="playerSelect"></select>
+    </section>
+
+    <section class="score-entry">
+      <label for="matchNo">Match Number:</label>
+      <input type="text" id="matchNo" readonly />
+      <label for="runInput">Run Scored:</label>
+      <input type="number" id="runInput" placeholder="Enter runs"/>
+      <button id="submitRunBtn">Submit Run</button>
+    </section>
+
+    <!-- ACTION BUTTONS -->
+    <section class="actions">
+      <button id="viewRankBtn">View Rank</button>
+      <button id="viewStatsBtn">View Stats</button>
+    </section>
+
+    <section id="output"></section>
+  </main>
+
+  <!-- Firebase compat version: works with global `firebase` object -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0f7fa, #80deea);
+  position: relative;
+  overflow-x: hidden;
+}
+.overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url('bat-ball-watermark.png') center 20% no-repeat;
+  opacity: 0.1;
+  pointer-events: none;
+}
+header {
+  text-align: center;
+  padding: 20px;
+  position: relative;
+}
+header h1 { color: #006064; font-size: 2.2rem; }
+.corner {
+  width: 120px;
+  position: absolute;
+  top: 10px;
+}
+.corner.left { left: 10px; transform: rotate(-10deg); }
+.corner.right { right: 10px; transform: rotate(10deg); }
+main {
+  max-width: 600px;
+  margin: 20px auto;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+section { margin-bottom: 20px; }
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: #004d40;
+  font-weight: bold;
+}
+input, select, button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+button {
+  background-color: #006064;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+button:hover {
+  background: #004d40;
+}
+#output {
+  background: #e0f2f1;
+  padding: 15px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+
+// import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+// import {
+//   getFirestore, collection, addDoc, doc,
+//   setDoc, getDocs, updateDoc, query,
+//   orderBy
+// } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+// 🔐 Replace config with your Firebase project settings
+const firebaseConfig = {
+    apiKey: "AIzaSyBqJZKCcyjKBEsCoNphnFe4otsjEXGvXMg",
+    authDomain: "cricket-e6b2e.firebaseapp.com",
+    projectId: "cricket-e6b2e",
+    storageBucket: "cricket-e6b2e.firebasestorage.app",
+    messagingSenderId: "343042378491",
+    appId: "1:343042378491:web:7d4bda9bc3dfe4c611fe5e"
+  };
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const playerSelect = document.getElementById('playerSelect');
+const matchNo = document.getElementById('matchNo');
+const runInput = document.getElementById('runInput');
+const submitRunBtn = document.getElementById('submitRunBtn');
+const addPlayerBtn = document.getElementById('addPlayerBtn');
+const viewRankBtn = document.getElementById('viewRankBtn');
+const viewStatsBtn = document.getElementById('viewStatsBtn');
+const output = document.getElementById('output');
+
+async function loadPlayers() {
+  playerSelect.innerHTML = '';
+  const snap = await db.collection('players').get();
+  snap.forEach(docSnap => {
+    const opt = document.createElement('option');
+    opt.value = docSnap.id;
+    opt.text = docSnap.data().name;
+    playerSelect.add(opt);
+  });
+  updateMatchNo();
+}
+
+async function updateMatchNo() {
+  const pid = playerSelect.value;
+  if (!pid) { matchNo.value = ''; return; }
+  const snap = await db.collection('players').doc(pid).collection('scores').get();
+  matchNo.value = snap.size + 1;
+}
+
+playerSelect.onchange = () => updateMatchNo();
+
+addPlayerBtn.onclick = async () => {
+  const name = prompt("Enter new player's name:");
+  if (name) {
+    const pd = await db.collection("players").add({ name });
+    await db.collection("players").doc(pd.id).collection("meta").doc("info").set({
+            total: 0,
+            matches: 0
+        });
+    loadPlayers();
+  }
+};
+submitRunBtn.onclick = async () => {
+  const pid = playerSelect.value;
+  const rn = parseInt(runInput.value);
+  if (!pid) return alert('Select a player');
+  if (isNaN(rn)) return alert('Enter valid run');
+
+  const ms = matchNo.value;
+
+  // Save run for the specific match number
+  await db.collection('players').doc(pid)
+    .collection('scores').doc(ms).set({ run: rn });
+
+  // Get meta data (total runs & matches)
+  const metaRef = db.collection('players').doc(pid).collection('meta').doc('info');
+  const metaSnap = await metaRef.get();
+
+  let meta = metaSnap.exists ? metaSnap.data() : { total: 0, matches: 0 };
+
+  // Update meta info
+  await metaRef.set({
+    total: meta.total + rn,
+    matches: meta.matches + 1
+  });
+
+  runInput.value = '';
+  updateMatchNo();
+};
+
+
+viewRankBtn.onclick = async () => {
+  const playersSnap = await db.collection('players').get();
+  const rankings = [];
+
+  for (let doc of playersSnap.docs) {
+    const pid = doc.id;
+    const name = doc.data().name;
+    const metaSnap = await db.collection('players').doc(pid)
+                            .collection('meta').doc('info').get();
+    const meta = metaSnap.exists ? metaSnap.data() : { total: 0 };
+    rankings.push({ name, total: meta.total });
+  }
+
+  rankings.sort((a, b) => b.total - a.total);
+
+  const lines = rankings.map((p, i) => `${i + 1}. ${p.name} — Total ${p.total} runs`);
+  output.textContent = lines.join('\n');
+};
+
+viewStatsBtn.onclick = async () => {
+  const pid = playerSelect.value;
+  if (!pid) return alert('Select a player');
+
+  const metaSnap = await db.collection('players').doc(pid)
+                           .collection('meta').doc('info').get();
+  if (!metaSnap.exists) {
+    output.textContent = "No stats found.";
+    return;
+  }
+
+  const meta = metaSnap.data();
+  const avg = (meta.total / meta.matches).toFixed(2);
+
+  output.textContent = `
+Player: ${playerSelect.options[playerSelect.selectedIndex].text}
+Matches: ${meta.matches}
+Total Runs: ${meta.total}
+Average: ${avg}
+  `.trim();
+};
+
+
+loadPlayers();
